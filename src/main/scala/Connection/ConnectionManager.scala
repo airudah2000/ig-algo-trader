@@ -10,17 +10,17 @@ case object LIVE extends MODE
 
 trait ConnectionManager {
 
-  val headers: JsValue
-
   val mode: MODE
+
+  val headers: JsValue
 
   def isConnected: Boolean
 
   def getConnection: Any
 
-  def getApiKey: String
-
   def connection: String
+
+  def getApiKey: String
 }
 
 class ApiConnection(connectionMode: MODE) extends ConnectionManager {
@@ -34,7 +34,7 @@ class ApiConnection(connectionMode: MODE) extends ConnectionManager {
     "Version":"2"
     }""")
 
-  override def isConnected: Boolean = false
+  override def isConnected: Boolean = ???
 
   override def getConnection: Unit = ???
 
