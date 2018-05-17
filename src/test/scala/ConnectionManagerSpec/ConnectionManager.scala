@@ -7,8 +7,7 @@ import play.api.libs.json.Json
 
 class ConnectionManager extends FunSuite {
 
-  val apiKey = "abcd1234"
-  val connectionManager: Connection.ConnectionManager = ConnectionManager(DEMO, apiKey)
+  val connectionManager: Connection.ConnectionManager = new ApiConnection(DEMO)
 
   test("A ConnectionManager header should be verifiable JSON"){
 
@@ -16,7 +15,7 @@ class ConnectionManager extends FunSuite {
       """{
         |  "Content-Type" : "application/json; charset=utf-8",
         |  "Accept" : "application/json; charset=utf-8",
-        |  "X-IG-API-KEY" : "abcd1234",
+        |  "X-IG-API-KEY" : "XXXXX",
         |  "Version" : "2"
         |}""".stripMargin
 
@@ -26,6 +25,10 @@ class ConnectionManager extends FunSuite {
     println(headersJsonPretty)
 
     assert(expectedHeadersString == headersJsonPretty)
+  }
+
+  ignore("Open a connection to DEMO IG"){
+
   }
 
 }

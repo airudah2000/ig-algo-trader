@@ -8,3 +8,5 @@ libraryDependencies += "com.typesafe.play" %% "play-json" % "2.6.8"
 
 // https://mvnrepository.com/artifact/org.scalatest/scalatest
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.4" % Test
+
+libraryDependencies += "com.typesafe" % "config" % "1.3.2"
