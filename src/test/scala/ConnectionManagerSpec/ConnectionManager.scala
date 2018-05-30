@@ -12,10 +12,7 @@ class ConnectionManager extends FunSuite {
 
     val theResponse: HttpResponse = aipConnection.connection
 
-    println("\nResponse Message:\n" + theResponse.httpMessage + "\n\n\n")
-//    println("\nResponse Headers:\n" + theResponse.headers)
-//    println("\nResponse Entity:\n" + theResponse.entity)
-//    println("\nResponse Status:\n" + theResponse.status.isSuccess())
+    assert(theResponse.status.isSuccess())
 
   }
 

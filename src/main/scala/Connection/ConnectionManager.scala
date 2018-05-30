@@ -89,9 +89,7 @@ class ApiConnection(connectionMode: MODE) extends IGConnectionManager {
   val futConnection: Future[HttpResponse] = Http().singleRequest(connectionRequest)
 
   futConnection onComplete {
-//    case Success(response: HttpResponse) => println(Json.prettyPrint(Json.parse(response.entity.httpEntity.toString)))
-    case Success(response: HttpResponse) => println("\n\nThe Result: " + response.httpMessage.getHeader("CST"))
-//    case Success(response: HttpResponse) => println("\n\nThe Result: " + response.httpMessage.headers)
+    case Success(response: HttpResponse) => println("\nCST Code: " + response.httpMessage.getHeader("CST").get().value())
     case Failure(f) => println(s"Failed: [${f.getMessage}]")
   }
 
