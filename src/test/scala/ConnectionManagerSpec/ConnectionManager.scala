@@ -2,33 +2,22 @@ package ConnectionManagerSpec
 
 import org.scalatest.FunSuite
 import Connection._
-import play.api.libs.json.Json
-
+import akka.http.scaladsl.model._
 
 class ConnectionManager extends FunSuite {
 
-  val connectionManager: Connection.ConnectionManager = new ApiConnection(DEMO)
+  test("Open a connection to DEMO IG") {
 
-  test("A ConnectionManager header should be verifiable JSON"){
+    val aipConnection = new ApiConnection(DEMO)
 
-    val expectedHeadersString: String =
-      """{
-        |  "Content-Type" : "application/json; charset=utf-8",
-        |  "Accept" : "application/json; charset=utf-8",
-        |  "X-IG-API-KEY" : "XXXXX",
-        |  "Version" : "2"
-        |}""".stripMargin
+    val theResponse: HttpResponse = aipConnection.connection
 
-    val headersJsonPretty: String = Json.prettyPrint(connectionManager.headers)
-
-    println(expectedHeadersString)
-    println(headersJsonPretty)
-
-    assert(expectedHeadersString == headersJsonPretty)
-  }
-
-  ignore("Open a connection to DEMO IG"){
+    println("\nResponse Message:\n" + theResponse.httpMessage + "\n\n\n")
+//    println("\nResponse Headers:\n" + theResponse.headers)
+//    println("\nResponse Entity:\n" + theResponse.entity)
+//    println("\nResponse Status:\n" + theResponse.status.isSuccess())
 
   }
+
 
 }

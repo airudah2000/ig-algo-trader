@@ -1,47 +1,99 @@
 package Connection
 
-import play.api.libs.json._
-import com.typesafe.config.{Config, ConfigFactory}
+import java.util.concurrent.TimeUnit
+
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.HttpMethods.POST
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{Accept, RawHeader}
+import akka.stream.ActorMaterializer
+import com.typesafe.config.ConfigFactory
+import play.api.libs.json.{JsValue, Json}
+
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.FiniteDuration
+import scala.util.{Failure, Success}
 
 trait MODE
 case object DEMO extends MODE
 case object LIVE extends MODE
 
+case class Credentials(un: String, pw: String, apiKey: String, url: String, version: Int)
 
-trait ConnectionManager {
+trait IGConnectionManager {
 
-  val mode: MODE
+  val acceptHeader: Accept = Accept.apply(MediaTypes.`application/json`)
 
-  val headers: JsValue
+  val versionHeader: RawHeader = RawHeader("Version", getCredentials.version.toString)
 
-  def isConnected: Boolean
+  def apiKeyHeader: RawHeader = RawHeader("X-IG-API-KEY", getCredentials.apiKey)
 
-  def getConnection: Any
+  val connectionEntity: JsValue
 
-  def connection: String
+  val connectionRequest: HttpRequest
 
-  def getApiKey: String
+  val connection: HttpResponse
+
+  def getCredentials: Credentials
+
 }
 
-class ApiConnection(connectionMode: MODE) extends ConnectionManager {
+class ApiConnection(connectionMode: MODE) extends IGConnectionManager {
 
-  override val mode: MODE = connectionMode
+  implicit val system = ActorSystem()
+  implicit val materializer = ActorMaterializer()
+  implicit val executionContext = system.dispatcher
 
-  override val headers: JsValue = Json.parse(s"""{
-    "Content-Type":"application/json; charset=utf-8",
-    "Accept":"application/json; charset=utf-8",
-    "X-IG-API-KEY":"$getApiKey",
-    "Version":"2"
-    }""")
-
-  override def isConnected: Boolean = ???
-
-  override def getConnection: Unit = ???
-
-  override def connection: String = ???
-
-  override def getApiKey: String = mode match {
-    case DEMO => ConfigFactory.load().getString ("ig.demo.api.key")
-    case LIVE => ConfigFactory.load("live").getString ("ig.live.api.key")
+  override def getCredentials: Credentials = connectionMode match {
+    case DEMO => {
+      val modeConfig = ConfigFactory.load()
+      Credentials(
+        modeConfig.getString("ig.demo.api.username"),
+        modeConfig.getString("ig.demo.api.password"),
+        modeConfig.getString("ig.demo.api.key"),
+        modeConfig.getString("ig.demo.connection.url"),
+        modeConfig.getInt("ig.demo.api.version")
+      )
+    }
+    case LIVE => {
+      val modeConfig = ConfigFactory.load("live")
+      Credentials(
+        modeConfig.getString("ig.live.api.username"),
+        modeConfig.getString("ig.live.api.password"),
+        modeConfig.getString("ig.live.api.key"),
+        modeConfig.getString("ig.live.connection.url"),
+        modeConfig.getInt("ig.live.api.version")
+      )
+    }
   }
+
+  override val connectionEntity: JsValue = Json.parse(
+    s"""
+       |{
+       |  "identifier": "${getCredentials.un}",
+       |  "password": "${getCredentials.pw}",
+       |  "encryptedPassword": null
+       |}
+       """.stripMargin)
+
+  val apiHeaders = List(acceptHeader, versionHeader, apiKeyHeader)
+
+  override val connectionRequest: HttpRequest = HttpRequest(
+    POST,
+    uri = getCredentials.url,
+    headers = apiHeaders,
+    entity = HttpEntity(ContentTypes.`application/json`, connectionEntity.toString)
+  )
+
+  val futConnection: Future[HttpResponse] = Http().singleRequest(connectionRequest)
+
+  futConnection onComplete {
+//    case Success(response: HttpResponse) => println(Json.prettyPrint(Json.parse(response.entity.httpEntity.toString)))
+    case Success(response: HttpResponse) => println("\n\nThe Result: " + response.httpMessage.getHeader("CST"))
+//    case Success(response: HttpResponse) => println("\n\nThe Result: " + response.httpMessage.headers)
+    case Failure(f) => println(s"Failed: [${f.getMessage}]")
+  }
+
+  override lazy val connection: HttpResponse = Await.result(futConnection, FiniteDuration(5.toLong, TimeUnit.SECONDS))
 }
