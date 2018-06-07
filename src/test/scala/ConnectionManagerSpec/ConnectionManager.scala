@@ -1,18 +1,29 @@
 package ConnectionManagerSpec
 
-import org.scalatest.FunSuite
+import org.scalatest.AsyncFlatSpec
 import Connection._
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 
-class ConnectionManager extends FunSuite {
+import scala.concurrent.Future
 
-  test("Open a connection to DEMO IG") {
+class ConnectionManager extends AsyncFlatSpec {
 
-    val aipConnection = new ApiConnection(DEMO)
+  implicit val system = ActorSystem()
 
-    val theResponse: HttpResponse = aipConnection.connection
+  behavior of "ApiConnection"
 
-    assert(theResponse.status.isSuccess())
+  it should "open a connection to DEMO IG" in {
+
+    val aipConnection: ApiConnection = new ApiConnection(DEMO)
+    val connFut: Future[HttpResponse] = aipConnection.futConnection
+
+    connFut.map { response: HttpResponse =>
+      val isSuccessful = response.status.isSuccess()
+      val CST: String = response.getHeader("CST").get().value()
+      println(s"CST Value: [$CST]")
+      assert(isSuccessful)
+    }
 
   }
 

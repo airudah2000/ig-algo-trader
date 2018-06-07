@@ -1,7 +1,5 @@
 package Connection
 
-import java.util.concurrent.TimeUnit
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpMethods.POST
@@ -10,10 +8,7 @@ import akka.http.scaladsl.model.headers.{Accept, RawHeader}
 import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
 import play.api.libs.json.{JsValue, Json}
-
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration.FiniteDuration
-import scala.util.{Failure, Success}
+import scala.concurrent.Future
 
 trait MODE
 case object DEMO extends MODE
@@ -33,7 +28,7 @@ trait IGConnectionManager {
 
   val connectionRequest: HttpRequest
 
-  val connection: HttpResponse
+  val futConnection: Future[HttpResponse]
 
   def getCredentials: Credentials
 
@@ -88,10 +83,4 @@ class ApiConnection(connectionMode: MODE) extends IGConnectionManager {
 
   val futConnection: Future[HttpResponse] = Http().singleRequest(connectionRequest)
 
-  futConnection onComplete {
-    case Success(response: HttpResponse) => println("\nCST Code: " + response.httpMessage.getHeader("CST").get().value())
-    case Failure(f) => println(s"Failed: [${f.getMessage}]")
-  }
-
-  override lazy val connection: HttpResponse = Await.result(futConnection, FiniteDuration(5.toLong, TimeUnit.SECONDS))
 }
