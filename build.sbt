@@ -1,4 +1,4 @@
-name := "FAIG-SCALA"
+name := "ig-algo-trader"
 
 version := "0.1"
 
