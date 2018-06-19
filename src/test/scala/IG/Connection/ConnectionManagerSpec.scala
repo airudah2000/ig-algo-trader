@@ -1,12 +1,11 @@
-package IG
+package IG.Connection
 
-import org.scalatest.AsyncFlatSpec
-import Connection._
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model._
 import java.util.logging._
 
+import akka.actor.ActorSystem
+import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
+import org.scalatest.AsyncFlatSpec
 
 import scala.concurrent.duration.{FiniteDuration, SECONDS}
 import scala.concurrent.{Await, Future}

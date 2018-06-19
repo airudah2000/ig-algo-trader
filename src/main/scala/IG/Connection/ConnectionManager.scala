@@ -1,4 +1,6 @@
-package Connection
+package IG.Connection
+
+import java.util.logging._
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -8,7 +10,6 @@ import akka.http.scaladsl.model.headers.{Accept, RawHeader}
 import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
 import play.api.libs.json.{JsValue, Json}
-import java.util.logging._
 
 import scala.concurrent.duration.{FiniteDuration, SECONDS}
 import scala.concurrent.{Await, Future}
@@ -19,7 +20,7 @@ case object LIVE extends MODE
 
 case class Credentials(un: String, pw: String, apiKey: String, url: String, accountId: String, version: Int)
 
-trait IGConnectionManager {
+trait ConnectionManager {
 
   final val acceptHeader: Accept = Accept.apply(MediaTypes.`application/json`)
 
@@ -45,7 +46,7 @@ trait IGConnectionManager {
 
 }
 
-class ApiConnection(connectionMode: MODE) extends IGConnectionManager {
+class ApiConnection(connectionMode: MODE) extends ConnectionManager {
 
   final val log = Logger.getLogger(classOf[ApiConnection].getName)
 
