@@ -4,10 +4,9 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import IG.Util
-import org.scalatest.AsyncFlatSpec
 
 import java.util.logging.Logger
-
+import org.scalatest.AsyncFlatSpec
 import scala.concurrent.{Await, Future}
 
 
