@@ -8,9 +8,10 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Accept, RawHeader}
 import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
-import play.api.libs.json.{JsValue, Json}
 import com.typesafe.scalalogging.Logger
-import scala.concurrent.{Await, Future}
+import play.api.libs.json.JsValue
+
+import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 
 
 trait MODE
@@ -49,12 +50,12 @@ class ApiConnection(val connectionMode: MODE) extends ConnectionManager with Uti
 
   final val log = Logger(this.getClass.getName)
 
-  implicit val system = ActorSystem()
-  implicit val materializer = ActorMaterializer()
-  implicit val executionContext = system.dispatcher
+  implicit val system: ActorSystem = ActorSystem()
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
+  implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
   override def credentials: Credentials = connectionMode match {
-    case DEMO => {
+    case DEMO =>
       val modeConfig = ConfigFactory.load()
       Credentials(
         modeConfig.getString("ig.demo.api.username"),
@@ -64,8 +65,7 @@ class ApiConnection(val connectionMode: MODE) extends ConnectionManager with Uti
         modeConfig.getString("ig.demo.api.accountid"),
         modeConfig.getInt("ig.demo.api.version")
       )
-    }
-    case LIVE => {
+    case LIVE =>
       val modeConfig = ConfigFactory.load("live")
       Credentials(
         modeConfig.getString("ig.live.api.username"),
@@ -75,7 +75,6 @@ class ApiConnection(val connectionMode: MODE) extends ConnectionManager with Uti
         modeConfig.getString("ig.live.api.accountid"),
         modeConfig.getInt("ig.live.api.version")
       )
-    }
   }
 
   val handshakeRequestHeaders = List(acceptHeader, versionHeader, apiKeyHeader)

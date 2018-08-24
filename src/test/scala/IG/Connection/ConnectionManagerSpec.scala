@@ -15,8 +15,8 @@ class ConnectionManagerSpec extends AsyncFlatSpec with Util {
 
   private[this] final val log = Logger.getLogger(classOf[ConnectionManagerSpec].getName)
 
-  implicit val system = ActorSystem()
-  implicit val materializer = ActorMaterializer()
+  implicit val system: ActorSystem = ActorSystem()
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   val apiConnection: ApiConnection = new ApiConnection(DEMO)
   val connFut: Future[HttpResponse] = apiConnection.futHandShakeConnection

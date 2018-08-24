@@ -13,11 +13,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class Positions(connection: ApiConnection) extends Util {
   private[this] final val log = Logger(classOf[Positions])
 
-  def currentPositions(positions:  Future[HttpResponse] ) = positions.onComplete {
-    case Success(e: HttpResponse) => {
+  def currentPositions(positions:  Future[HttpResponse] ): Unit = positions.onComplete {
+    case Success(e: HttpResponse) =>
       val positionJson = prettyPrintEntity(e.entity)(connection.materializer)
       log.info("\n" + positionJson)
-    }
     case Failure(f) => log.warn(s"Failure: [${f.getMessage}]")
   }
 
