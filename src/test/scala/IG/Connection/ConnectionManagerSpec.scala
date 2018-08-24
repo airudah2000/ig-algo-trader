@@ -8,13 +8,12 @@ import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import org.scalatest.AsyncFlatSpec
 
-import scala.concurrent.duration.{FiniteDuration, SECONDS}
 import scala.concurrent.{Await, Future}
 
 
 class ConnectionManagerSpec extends AsyncFlatSpec with Util {
 
-  private final val log = Logger.getLogger(classOf[ConnectionManagerSpec].getName)
+  private[this] final val log = Logger.getLogger(classOf[ConnectionManagerSpec].getName)
 
   implicit val system = ActorSystem()
   implicit val materializer = ActorMaterializer()
@@ -30,7 +29,7 @@ class ConnectionManagerSpec extends AsyncFlatSpec with Util {
       val isSuccessful = response.status.isSuccess()
       val hasCst = apiConnection.CST_TOKEN_HEADER.value().nonEmpty
 
-      apiConnection.getHandshakeResponseJson
+      apiConnection.handshakeResponseJson
 
       assert(isSuccessful)
       assert(hasCst)
@@ -39,16 +38,16 @@ class ConnectionManagerSpec extends AsyncFlatSpec with Util {
   }
 
   it should "be able to get data for an epic" in {
-    val WrongGBPUSD = "CS.D.GBXUSX.TODAY.IP"
+    val wrongGbpUsd = "CS.D.GBXUSX.TODAY.IP"
     val errorResponse =
       "HttpEntity.Strict(application/json,{\"errorCode\":\"error.service.marketdata.instrument.epic.invalid\"})"
 
-    val wrongEpicMarketData = Await.result(apiConnection.futMarketsRequest(WrongGBPUSD), FiniteDuration(3000L, SECONDS))
+    val wrongEpicMarketData = Await.result(apiConnection.futMarketsRequest(wrongGbpUsd), patienceDuration)
     assert(errorResponse === wrongEpicMarketData.entity.toString)
     wrongEpicMarketData.discardEntityBytes()
 
-    val GBPUSD = "CS.D.GBPUSD.TODAY.IP"
-    val epicMarketData = Await.result(apiConnection.futMarketsRequest(GBPUSD), FiniteDuration(3000L, SECONDS))
+    val gbpUsd = "CS.D.GBPUSD.TODAY.IP"
+    val epicMarketData = Await.result(apiConnection.futMarketsRequest(gbpUsd),patienceDuration)
     val rightResponse = epicMarketData.entity.toString
     epicMarketData.discardEntityBytes()
 

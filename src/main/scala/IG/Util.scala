@@ -11,6 +11,8 @@ import play.api.libs.json._
 
 trait Util {
 
+  final val patienceDuration = FiniteDuration(5000L, SECONDS)
+
   def jsonStrFromEntity(entity: ResponseEntity)(implicit mat: Materializer): String = {
     val bs: ByteString = Await.result(
       entity.dataBytes.runWith(Sink.fold(ByteString.empty)(_ ++ _)),

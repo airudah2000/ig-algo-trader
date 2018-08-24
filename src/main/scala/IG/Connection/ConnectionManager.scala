@@ -10,8 +10,6 @@ import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
 import play.api.libs.json.{JsValue, Json}
 import com.typesafe.scalalogging.Logger
-
-import scala.concurrent.duration.{FiniteDuration, SECONDS}
 import scala.concurrent.{Await, Future}
 
 
@@ -25,9 +23,9 @@ trait ConnectionManager extends Util {
 
   final val acceptHeader: Accept = Accept.apply(MediaTypes.`application/json`)
 
-  final val versionHeader: RawHeader = RawHeader("Version", getCredentials.version.toString)
+  final val versionHeader: RawHeader = RawHeader("Version", credentials.version.toString)
 
-  final val apiKeyHeader: RawHeader = RawHeader("X-IG-API-KEY", getCredentials.apiKey)
+  final val apiKeyHeader: RawHeader = RawHeader("X-IG-API-KEY", credentials.apiKey)
 
   val connectionEntity: JsValue
 
@@ -43,7 +41,7 @@ trait ConnectionManager extends Util {
 
   def X_SECURITY_TOKEN_HEADER: HttpHeader
 
-  def getCredentials: Credentials
+  def credentials: Credentials
 
 }
 
@@ -55,7 +53,7 @@ class ApiConnection(val connectionMode: MODE) extends ConnectionManager with Uti
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
 
-  override def getCredentials: Credentials = connectionMode match {
+  override def credentials: Credentials = connectionMode match {
     case DEMO => {
       val modeConfig = ConfigFactory.load()
       Credentials(
@@ -82,61 +80,61 @@ class ApiConnection(val connectionMode: MODE) extends ConnectionManager with Uti
 
   val handshakeRequestHeaders = List(acceptHeader, versionHeader, apiKeyHeader)
 
-  override val connectionEntity: JsValue = Json.parse(
+  override val connectionEntity: JsValue = stringToJsValue(
     s"""
        |{
-       |  "identifier": "${getCredentials.un}",
-       |  "password": "${getCredentials.pw}"
+       |  "identifier": "${credentials.un}",
+       |  "password": "${credentials.pw}"
        |}
        """.stripMargin)
 
   override val handshakeConnectionRequestBody: HttpRequest = HttpRequest(
     POST,
-    uri = s"${getCredentials.url}/session",
+    uri = s"${credentials.url}/session",
     headers = handshakeRequestHeaders,
     entity = HttpEntity(ContentTypes.`application/json`, connectionEntity.toString)
   )
 
   override def futHandShakeConnection: Future[HttpResponse] = Http().singleRequest(handshakeConnectionRequestBody)
 
-  val handshakeResponse: HttpResponse = Await.result(futHandShakeConnection, FiniteDuration(5000L, SECONDS))
+  val handshakeResponse: HttpResponse = Await.result(futHandShakeConnection, patienceDuration)
 
-  override def CST_TOKEN_HEADER =
+  override def CST_TOKEN_HEADER: HttpHeader =
     handshakeResponse.headers.find(h => h.name() == "CST").getOrElse(failureResponse(handshakeResponse))
-  override def X_SECURITY_TOKEN_HEADER =
+  override def X_SECURITY_TOKEN_HEADER: HttpHeader =
     handshakeResponse.headers.find(h => h.name() == "X-SECURITY-TOKEN").getOrElse(failureResponse(handshakeResponse))
 
   override def failureResponse(r: HttpResponse): HttpHeader = {
     RawHeader(r.status.value, jsonStrFromEntity(r.entity))
   }
 
-  def getHandshakeResponseJson: String = {
+  def handshakeResponseJson: String = {
     val jsfe = jsonStrFromEntity(handshakeResponse.entity)
     val jsonResponse = prettyPrint(stringToJsValue(jsfe))
     log.info(jsonResponse)
     jsonResponse
   }
 
-  override val sessionEntity: JsValue = Json.parse(
+  override val sessionEntity: JsValue = stringToJsValue(
     s"""
        |{
-       |  "accountId": "${getCredentials.accountId}",
+       |  "accountId": "${credentials.accountId}",
        |  "defaultAccount": "True"
        |}
        """.stripMargin)
 
-  def getDefaultRequest: HttpRequest = {
+  def defaultHttpRequest: HttpRequest = {
     val defaultRequestHeaders: List[HttpHeader] = List(acceptHeader, apiKeyHeader, CST_TOKEN_HEADER, X_SECURITY_TOKEN_HEADER)
     HttpRequest(GET, headers = defaultRequestHeaders)
   }
 
   def futAccountDetailsRequest: Future[HttpResponse] =
-    Http().singleRequest(getDefaultRequest.copy(uri = s"${getCredentials.url}/accounts"))
+    Http().singleRequest(defaultHttpRequest.copy(uri = s"${credentials.url}/accounts"))
 
   def futMarketsRequest(epicId: String): Future[HttpResponse] =
-    Http().singleRequest(getDefaultRequest.copy(uri = s"${getCredentials.url}/markets/$epicId"))
+    Http().singleRequest(defaultHttpRequest.copy(uri = s"${credentials.url}/markets/$epicId"))
 
   def futAccountPositionsRequest: Future[HttpResponse] =
-    Http().singleRequest(getDefaultRequest.copy(uri = s"${getCredentials.url}/positions"))
+    Http().singleRequest(defaultHttpRequest.copy(uri = s"${credentials.url}/positions"))
 
 }
