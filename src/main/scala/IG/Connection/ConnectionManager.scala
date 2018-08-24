@@ -2,6 +2,7 @@ package IG.Connection
 
 import java.util.logging._
 
+import IG.Util
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpMethods._
@@ -14,13 +15,14 @@ import play.api.libs.json.{JsValue, Json}
 import scala.concurrent.duration.{FiniteDuration, SECONDS}
 import scala.concurrent.{Await, Future}
 
+
 trait MODE
 case object DEMO extends MODE
 case object LIVE extends MODE
 
 case class Credentials(un: String, pw: String, apiKey: String, url: String, accountId: String, version: Int)
 
-trait ConnectionManager {
+trait ConnectionManager extends Util {
 
   final val acceptHeader: Accept = Accept.apply(MediaTypes.`application/json`)
 
@@ -28,13 +30,13 @@ trait ConnectionManager {
 
   final val apiKeyHeader: RawHeader = RawHeader("X-IG-API-KEY", getCredentials.apiKey)
 
-  final val defaultHeader = RawHeader("", "")
-
   val connectionEntity: JsValue
 
   val sessionEntity: JsValue
 
   val handshakeConnectionRequestBody: HttpRequest
+
+  def failureResponse(r: HttpResponse): HttpHeader
 
   def futHandShakeConnection: Future[HttpResponse]
 
@@ -46,7 +48,7 @@ trait ConnectionManager {
 
 }
 
-class ApiConnection(connectionMode: MODE) extends ConnectionManager {
+class ApiConnection(val connectionMode: MODE) extends ConnectionManager with Util {
 
   final val log = Logger.getLogger(classOf[ApiConnection].getName)
 
@@ -98,15 +100,23 @@ class ApiConnection(connectionMode: MODE) extends ConnectionManager {
 
   override def futHandShakeConnection: Future[HttpResponse] = Http().singleRequest(handshakeConnectionRequestBody)
 
-  private lazy val handshakeResponse: HttpResponse = Await.result(futHandShakeConnection, FiniteDuration(3000L, SECONDS))
+  val handshakeResponse: HttpResponse = Await.result(futHandShakeConnection, FiniteDuration(5000L, SECONDS))
 
   override def CST_TOKEN_HEADER =
-    handshakeResponse.headers.find(h => h.name() == "CST").getOrElse(defaultHeader)
+    handshakeResponse.headers.find(h => h.name() == "CST").getOrElse(failureResponse(handshakeResponse))
   override def X_SECURITY_TOKEN_HEADER =
-    handshakeResponse.headers.find(h => h.name() == "X-SECURITY-TOKEN").getOrElse(defaultHeader)
+    handshakeResponse.headers.find(h => h.name() == "X-SECURITY-TOKEN").getOrElse(failureResponse(handshakeResponse))
 
-  //TODO: Get the values out in a clean way
-  def getHandshakeResponseEntity = handshakeResponse.entity
+  override def failureResponse(r: HttpResponse): HttpHeader = {
+    RawHeader(r.status.value, jsonStrFromEntity(r.entity))
+  }
+
+  def getHandshakeResponseJson: String = {
+    val jsfe = jsonStrFromEntity(handshakeResponse.entity)
+    val jsonResponse = prettyPrint(stringToJsValue(jsfe))
+    log.info(jsonResponse)
+    jsonResponse
+  }
 
   override val sessionEntity: JsValue = Json.parse(
     s"""
