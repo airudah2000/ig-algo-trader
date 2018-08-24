@@ -1,13 +1,13 @@
 package IG.Account
 
-import IG.Connection.ApiConnection
-import IG.Util
 import akka.http.scaladsl.model.HttpResponse
 import com.typesafe.scalalogging.Logger
+import IG.Connection.ApiConnection
+import IG.Util
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
-import scala.concurrent.ExecutionContext.Implicits.global
 
 
 class Positions(connection: ApiConnection) extends Util {

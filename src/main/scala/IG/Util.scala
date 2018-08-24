@@ -4,10 +4,10 @@ import akka.http.scaladsl.model.ResponseEntity
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString
-
-import scala.concurrent.duration.{FiniteDuration, SECONDS}
-import scala.concurrent.Await
 import play.api.libs.json._
+
+import scala.concurrent.Await
+import scala.concurrent.duration.{FiniteDuration, SECONDS}
 
 trait Util {
 
