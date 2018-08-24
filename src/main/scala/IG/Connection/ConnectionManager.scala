@@ -1,7 +1,5 @@
 package IG.Connection
 
-import java.util.logging._
-
 import IG.Util
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -11,6 +9,7 @@ import akka.http.scaladsl.model.headers.{Accept, RawHeader}
 import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
 import play.api.libs.json.{JsValue, Json}
+import com.typesafe.scalalogging.Logger
 
 import scala.concurrent.duration.{FiniteDuration, SECONDS}
 import scala.concurrent.{Await, Future}
@@ -50,7 +49,7 @@ trait ConnectionManager extends Util {
 
 class ApiConnection(val connectionMode: MODE) extends ConnectionManager with Util {
 
-  final val log = Logger.getLogger(classOf[ApiConnection].getName)
+  final val log = Logger(this.getClass.getName)
 
   implicit val system = ActorSystem()
   implicit val materializer = ActorMaterializer()

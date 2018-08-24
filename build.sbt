@@ -13,3 +13,7 @@ libraryDependencies += "com.typesafe" % "config" % "1.3.2"
 
 libraryDependencies += "com.typesafe.akka" %% "akka-http"   % "10.1.1"
 libraryDependencies += "com.typesafe.akka" %% "akka-stream" % "2.5.11"
+
+// For logging
+libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
+libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0"
