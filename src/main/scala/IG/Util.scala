@@ -4,13 +4,14 @@ import akka.http.scaladsl.model.ResponseEntity
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString
+import com.typesafe.scalalogging.Logger
+import org.slf4j.LoggerFactory
 import play.api.libs.json._
 
 import scala.concurrent.Await
 import scala.concurrent.duration.{FiniteDuration, SECONDS}
 
 trait Util {
-
   final val patienceDuration = FiniteDuration(5000L, SECONDS)
 
   def jsonStrFromEntity(entity: ResponseEntity)(implicit mat: Materializer): String = {
@@ -28,4 +29,8 @@ trait Util {
   def prettyPrintEntity(entity: ResponseEntity)(implicit mat: Materializer): String = {
     prettyPrint(stringToJsValue(jsonStrFromEntity(entity)))
   }
+}
+
+trait LogUtil {
+  final lazy val log = Logger(LoggerFactory.getLogger(getClass.getName))
 }

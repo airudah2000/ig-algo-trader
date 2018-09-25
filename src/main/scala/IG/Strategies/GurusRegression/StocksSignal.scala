@@ -1,9 +1,7 @@
 package IG.Strategies.GurusRegression
 
-import java.util.logging.Logger
-
 import IG.Connection.ApiConnection
-import IG.{DataProcessor, EpicSnapshot}
+import IG.{DataProcessor, EpicSnapshot, LogUtil}
 import IG.Strategies._
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpResponse
@@ -12,9 +10,8 @@ import akka.stream.ActorMaterializer
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class StocksSignal(conn: ApiConnection) extends Strategy {
+class StocksSignal(conn: ApiConnection) extends Strategy with LogUtil {
 
-  private[this] final val log = Logger.getLogger(classOf[StocksSignal].getName)
   implicit val system: ActorSystem = ActorSystem()
   implicit val mat: ActorMaterializer = ActorMaterializer()
 
@@ -26,12 +23,11 @@ class StocksSignal(conn: ApiConnection) extends Strategy {
     conn.futMarketsRequest(instrument.toString.stripMargin)
   }
 
-
   override def tradeSignals: Unit = instruments.foreach{ ins: Instrument =>
       marketData(ins, OneH).onComplete{
         case scala.util.Success(response: HttpResponse) => {
           response.discardEntityBytes()
-          val snapshot: EpicSnapshot = processor.getSnapshotData(response.entity)
+          val snapshot: EpicSnapshot = processor.entityToSnapshot(response.entity)
           log.info(snapshot.toString)
 
           val direction: Direction = calculateSide(snapshot.bid, snapshot.offer)
@@ -45,7 +41,7 @@ class StocksSignal(conn: ApiConnection) extends Strategy {
           }
         }
         case scala.util.Failure(ex: Throwable) => {
-          log.severe("Something went wrong: " + ex.getMessage)
+          log.error("Something went wrong: " + ex.getMessage)
           ex
         }
       }

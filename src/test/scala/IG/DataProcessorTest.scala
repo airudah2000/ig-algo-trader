@@ -9,7 +9,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpResponse
 import akka.stream.ActorMaterializer
 import org.scalatest.AsyncFlatSpec
-import play.api.libs.json.{JsArray, JsValue}
+import play.api.libs.json.{JsArray, JsNull, JsValue}
 
 import scala.concurrent.{Await, Future}
 
@@ -27,18 +27,16 @@ class DataProcessorTest extends AsyncFlatSpec with Util {
   behavior of "DataProcessor"
 
   it should "retrieve snapshot data from an epic entity response data" in {
-
     guruRegression.marketData(KA_D_MCSLN_DAILY_IP, OneH).map{ response =>
       response.discardEntityBytes()
-      val entityCaseClass: EpicSnapshot = processor.getSnapshotData(response.entity)
+      val entityCaseClass: EpicSnapshot = processor.entityToSnapshot(response.entity)
       log.info(entityCaseClass.toString)
 
-      assert(entityCaseClass.marketStatus === "EDITS_ONLY")
+      assert(Seq("EDITS_ONLY", "OFFLINE", "TRADEABLE").contains(entityCaseClass.marketStatus))
     }
   }
 
   it should "build a collection of AccountInfo from an account query response" in {
-
     val sampleJsonResponseString =
       """
         |{
@@ -85,13 +83,16 @@ class DataProcessorTest extends AsyncFlatSpec with Util {
     val response: HttpResponse = Await.result(apiConnection.futAccountDetailsRequest, patienceDuration)
     response.discardEntityBytes()
 
-    val processedAccountsData: Map[String, AccountInfo] = processor.getAccountData(response.entity)
+    val processedAccountsData: Map[String, AccountInfo] = processor.entityToAccount(response.entity)
 
     val actualSpreadBetAccount: AccountInfo = processedAccountsData("SPREADBET")
-    val expectedSpreadBetAccount: JsValue = accntArr.value.head
+    val expectedSpreadBetAccount: JsValue = accntArr.value.headOption.getOrElse(JsNull)
+
+    log.info(s"Expected Account Json: [$expectedSpreadBetAccount]")
+    log.info(s"Actual Account Object: [${actualSpreadBetAccount.toString}]")
 
     assert(actualSpreadBetAccount.accountType === (expectedSpreadBetAccount \ "accountType").as[String])
-    assert(actualSpreadBetAccount.accountName  === (expectedSpreadBetAccount \ "accountName").as[String])
+    assert(actualSpreadBetAccount.accountName === (expectedSpreadBetAccount \ "accountName").as[String])
     assert(actualSpreadBetAccount.status      === (expectedSpreadBetAccount \ "status").as[String])
     assert(actualSpreadBetAccount.currency    === (expectedSpreadBetAccount \ "currency").as[String])
 

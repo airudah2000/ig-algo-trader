@@ -9,7 +9,7 @@ import play.api.libs.json._
 case class EpicSnapshot(marketStatus             : String,
                         netChange                : Double,
                         percentageChange         : Double,
-                        updateTime               : Date,
+                        updateTime               : Date, //TODO: Retrieve just the timestamp
                         delayTime                : Int,
                         bid                      : Double,
                         offer                    : Double,
@@ -31,14 +31,14 @@ case class Balance(balance: Double, deposit: Double, profitLoss: Double, availab
 
 class DataProcessor extends Util {
 
-  def getSnapshotData(entity: ResponseEntity)(implicit mat: Materializer): EpicSnapshot = {
+  def entityToSnapshot(entity: ResponseEntity)(implicit mat: Materializer): EpicSnapshot = {
     val snapshot = "snapshot"
     val snapshotJValue: JsValue = stringToJsValue(jsonStrFromEntity(entity))
 
     val ms  : String         = (snapshotJValue \ snapshot \ "marketStatus").as[String]
     val nc  : Double         = (snapshotJValue \ snapshot \ "percentageChange").as[Double]
     val pc  : Double         = (snapshotJValue \ snapshot \ "netChange").as[Double]
-    val ut  : Date           = Calendar.getInstance().getTime //TODO: Retrieve just the timestamp
+    val ut  : Date           = Calendar.getInstance().getTime
     val dt  : Int            = (snapshotJValue \ snapshot \ "delayTime").as[Int]
     val b   : Double         = (snapshotJValue \ snapshot \ "bid").as[Double]
     val o   : Double         = (snapshotJValue \ snapshot \ "offer").as[Double]
@@ -50,18 +50,17 @@ class DataProcessor extends Util {
     epicSnapshot
   }
 
-  def getAccountData(entity: ResponseEntity)(implicit mat: Materializer): Map[String, AccountInfo] = {
-
+  def entityToAccount(entity: ResponseEntity)(implicit mat: Materializer): Map[String, AccountInfo] = {
     val accountsJValue: JsValue = stringToJsValue(jsonStrFromEntity(entity))
-
     val accountsList: Seq[JsValue] = (accountsJValue \ "accounts").as[JsArray].value
+    val balance = "balance"
 
     (for (account <- accountsList) yield {
-      val balance: Balance = Balance(
-        (account \ "balance" \ "balance").as[Double],
-        (account \ "balance" \ "deposit").as[Double],
-        (account \ "balance" \ "profitLoss").as[Double],
-        (account \ "balance" \ "available").as[Double])
+      val accountBalance: Balance = Balance(
+        (account \ balance \ balance).as[Double],
+        (account \ balance \ "deposit").as[Double],
+        (account \ balance \ "profitLoss").as[Double],
+        (account \ balance \ "available").as[Double])
 
       val acId     = (account \ "accountId").as[String]
       val acName   = (account \ "accountName").as[String]
@@ -72,7 +71,7 @@ class DataProcessor extends Util {
       val canTFrom = (account \ "canTransferFrom").as[Boolean]
       val canTTo   = (account \ "canTransferTo").as[Boolean]
 
-      acTyp -> AccountInfo(acId, acName, status, acTyp, pref, balance, ccy, canTFrom, canTTo)
+      acTyp -> AccountInfo(acId, acName, status, acTyp, pref, accountBalance, ccy, canTFrom, canTTo)
 
     }).toMap
 
