@@ -16,7 +16,7 @@ class Positions(connection: ApiConnection) extends Util {
   def currentPositions(positions:  Future[HttpResponse] ): Unit = positions.onComplete {
     case Success(e: HttpResponse) =>
       val positionJson = prettyPrintEntity(e.entity)(connection.materializer)
-      log.info("\n" + positionJson)
+      log.info(positionJson)
     case Failure(f) => log.warn(s"Failure: [${f.getMessage}]")
   }
 
